@@ -1,3 +1,5 @@
+将选中的锐边、缝合边一键转换为倒角权重、缝合边和锐边。
+
 一些截图：
 
 <img width="394" height="586" alt="blender_ldnMDOG8Zw" src="https://github.com/user-attachments/assets/15049362-a770-41be-a066-8612bd8c942e" />
