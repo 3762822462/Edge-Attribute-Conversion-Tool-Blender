@@ -1,7 +1,7 @@
 bl_info = {
     "name": "边属性转换工具",
-    "author":DeepSeek, Gemini 3 Pro, 3762822462",
-    "version": (1, 0, 1),
+    "author": "DeepSeek, Gemini 3 Pro, 3762822462",
+    "version": (1, 0, 2),
     "blender": (5, 0, 1),
     "location": "3D Viewport > Sidebar > Edge Tools",
     "description": "转换选中边的锐边、缝合边和倒角权重属性",
@@ -68,7 +68,13 @@ class MESH_OT_convert_edge_attributes(Operator):
         # 获取编辑模式的网格数据
         bm = bmesh.from_edit_mesh(obj.data)
         
-        # 获取选中的边
+        # --- 修复点：先确保倒角层存在，再获取边 ---
+        # 如果先获取边再加层，会导致边的引用（指针）失效
+        bw_layer = None
+        if 'BEVEL' in self.conversion_type:
+            bw_layer = ensure_bevel_layer(bm)
+        
+        # 获取选中的边 (必须在 ensure_bevel_layer 之后)
         selected_edges = [edge for edge in bm.edges if edge.select]
         
         if not selected_edges:
@@ -76,11 +82,6 @@ class MESH_OT_convert_edge_attributes(Operator):
             return {'CANCELLED'}
         
         modified_count = 0
-        
-        # 预先获取倒角层，避免在循环中重复检查
-        bw_layer = None
-        if 'BEVEL' in self.conversion_type:
-            bw_layer = ensure_bevel_layer(bm)
         
         for edge in selected_edges:
             if self.conversion_type == 'SHARP_TO_BEVEL':
@@ -146,6 +147,11 @@ class MESH_OT_quick_convert_sharp_to_bevel(Operator):
             bpy.ops.object.mode_set(mode='EDIT')
         
         bm = bmesh.from_edit_mesh(obj.data)
+
+        # --- 修复点：先创建层 ---
+        bw_layer = ensure_bevel_layer(bm)
+
+        # --- 后收集边 ---
         selected_edges = [edge for edge in bm.edges if edge.select]
         
         if not selected_edges:
@@ -153,7 +159,6 @@ class MESH_OT_quick_convert_sharp_to_bevel(Operator):
             return {'CANCELLED'}
         
         modified_count = 0
-        bw_layer = ensure_bevel_layer(bm)
         
         for edge in selected_edges:
             if edge.smooth == False:  # 锐边
@@ -279,6 +284,11 @@ class MESH_OT_quick_convert_seam_to_bevel(Operator):
             bpy.ops.object.mode_set(mode='EDIT')
         
         bm = bmesh.from_edit_mesh(obj.data)
+
+        # --- 修复点：先创建层 ---
+        bw_layer = ensure_bevel_layer(bm)
+
+        # --- 后收集边 ---
         selected_edges = [edge for edge in bm.edges if edge.select]
         
         if not selected_edges:
@@ -286,7 +296,6 @@ class MESH_OT_quick_convert_seam_to_bevel(Operator):
             return {'CANCELLED'}
         
         modified_count = 0
-        bw_layer = ensure_bevel_layer(bm)
         
         for edge in selected_edges:
             if edge.seam:  # 缝合边
